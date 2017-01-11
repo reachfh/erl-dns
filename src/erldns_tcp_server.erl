@@ -55,7 +55,8 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Message, State) ->
   {noreply, State}.
 handle_info({tcp, Socket, Bin}, State) ->
-  folsom_metrics:histogram_timed_update(tcp_handoff_histogram, ?MODULE, handle_request, [Socket, Bin]),
+  {Time, _Response} = timer:tc(?MODULE, handle_request, [Socket, Bin]),
+  ok = metrics:update(tcp_handoff_histogram, {c, Time}),
   {noreply, State};
 handle_info(_Message, State) ->
   {noreply, State}.

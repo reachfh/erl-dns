@@ -12,6 +12,7 @@
                   ssl,
                   mnesia,
                   observer,
+                  metrics,
                   bear,
                   folsom,
                   poolboy]},

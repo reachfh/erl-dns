@@ -53,35 +53,37 @@ stop(_State) ->
   ok.
 
 setup_metrics() ->
-  folsom_metrics:new_counter(udp_request_counter),
-  folsom_metrics:new_counter(tcp_request_counter),
-  folsom_metrics:new_meter(udp_request_meter),
-  folsom_metrics:new_meter(tcp_request_meter),
+  metrics:new(counter, udp_request_counter),
+  metrics:new(counter, tcp_request_counter),
+  metrics:new(meter, udp_request_meter),
+  metrics:new(meter, tcp_request_meter),
 
-  folsom_metrics:new_meter(udp_error_meter),
-  folsom_metrics:new_meter(tcp_error_meter),
+  metrics:new(meter, udp_error_meter),
+  metrics:new(meter, tcp_error_meter),
+
+  % The metrics module doesn't suport history, so use native folsom
   folsom_metrics:new_history(udp_error_history),
   folsom_metrics:new_history(tcp_error_history),
 
-  folsom_metrics:new_meter(refused_response_meter),
-  folsom_metrics:new_counter(refused_response_counter),
+  metrics:new(meter, refused_response_meter),
+  metrics:new(counter, refused_response_counter),
 
-  folsom_metrics:new_meter(empty_response_meter),
-  folsom_metrics:new_counter(empty_response_counter),
+  metrics:new(meter, empty_response_meter),
+  metrics:new(counter, empty_response_counter),
 
-  folsom_metrics:new_histogram(udp_handoff_histogram),
-  folsom_metrics:new_histogram(tcp_handoff_histogram),
+  metrics:new(histogram, udp_handoff_histogram),
+  metrics:new(histogram, tcp_handoff_histogram),
 
-  folsom_metrics:new_counter(request_throttled_counter),
-  folsom_metrics:new_meter(request_throttled_meter),
-  folsom_metrics:new_histogram(request_handled_histogram),
+  metrics:new(counter, request_throttled_counter),
+  metrics:new(meter, request_throttled_meter),
+  metrics:new(histogram, request_handled_histogram),
 
-  folsom_metrics:new_counter(packet_dropped_empty_queue_counter),
-  folsom_metrics:new_meter(packet_dropped_empty_queue_meter),
+  metrics:new(counter, packet_dropped_empty_queue_counter),
+  metrics:new(meter, packet_dropped_empty_queue_meter),
 
-  folsom_metrics:new_meter(cache_hit_meter),
-  folsom_metrics:new_meter(cache_expired_meter),
-  folsom_metrics:new_meter(cache_miss_meter),
+  metrics:new(meter, cache_hit_meter),
+  metrics:new(meter, cache_expired_meter),
+  metrics:new(meter, cache_miss_meter),
 
-  folsom_metrics:new_counter(dnssec_request_counter),
-  folsom_metrics:new_meter(dnssec_request_meter).
+  metrics:new(counter, dnssec_request_counter),
+  metrics:new(meter, dnssec_request_meter).
