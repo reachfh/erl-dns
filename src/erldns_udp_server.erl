@@ -81,7 +81,7 @@ handle_info(timeout, State) ->
   {noreply, State};
 handle_info({udp, Socket, Host, Port, Bin}, State) ->
   {Time, Response} = timer:tc(?MODULE, handle_request, [Socket, Host, Port, Bin, State]),
-  ok = metrics:update(udp_handoff_histogram, {c, Time}),
+  ok = metrics2:update(udp_handoff_histogram, {c, Time}),
   inet:setopts(State#state.socket, [{active, 100}]),
   Response;
 handle_info(_Message, State) ->
@@ -100,7 +100,7 @@ start(Address, Port, InetFamily) ->
   lager:info("Starting UDP server for ~p on address ~p and port ~p", [InetFamily, Address, Port]),
   case gen_udp:open(Port, [binary, {active, 100}, {reuseaddr, true},
                            {read_packets, 1000}, {ip, Address}, {recbuf, ?DEFAULT_UDP_RECBUF}, InetFamily]) of
-    {ok, Socket} -> 
+    {ok, Socket} ->
       lager:info("UDP server (~p, address: ~p) opened socket: ~p", [InetFamily, Address, Socket]),
       {ok, Socket};
     {error, eacces} ->
@@ -112,7 +112,7 @@ start(Address, Port, InetFamily, SocketOpts) ->
   lager:info("Starting UDP server for ~p on address ~p and port ~p (sockopts: ~p)", [InetFamily, Address, Port, SocketOpts]),
   case gen_udp:open(Port, [{reuseaddr, true}, binary, {active, 100},
                            {read_packets, 1000}, {ip, Address}, {recbuf, ?DEFAULT_UDP_RECBUF}, InetFamily|SocketOpts]) of
-    {ok, Socket} -> 
+    {ok, Socket} ->
       lager:info("UDP server (~p, address: ~p) opened socket: ~p", [InetFamily, Address, Socket]),
       {ok, Socket};
     {error, eacces} ->
@@ -129,8 +129,8 @@ handle_request(Socket, Host, Port, Bin, State) ->
       gen_server:cast(Worker, {udp_query, Socket, Host, Port, Bin}),
       {noreply, State#state{workers = queue:in(Worker, Queue)}};
     {empty, _Queue} ->
-      metrics:update(packet_dropped_empty_queue_counter),
-      metrics:update(packet_dropped_empty_queue_meter, {c, 1}),
+      metrics2:update(packet_dropped_empty_queue_counter),
+      metrics2:update(packet_dropped_empty_queue_meter, {c, 1}),
       lager:info("Queue is empty, dropping packet"),
       {noreply, State}
   end.

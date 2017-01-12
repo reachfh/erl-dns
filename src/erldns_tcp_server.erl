@@ -56,7 +56,7 @@ handle_cast(_Message, State) ->
   {noreply, State}.
 handle_info({tcp, Socket, Bin}, State) ->
   {Time, _Response} = timer:tc(?MODULE, handle_request, [Socket, Bin]),
-  ok = metrics:update(tcp_handoff_histogram, {c, Time}),
+  ok = metrics2:update(tcp_handoff_histogram, {c, Time}),
   {noreply, State};
 handle_info(_Message, State) ->
   {noreply, State}.

@@ -53,37 +53,37 @@ stop(_State) ->
   ok.
 
 setup_metrics() ->
-  metrics:new(counter, udp_request_counter),
-  metrics:new(counter, tcp_request_counter),
-  metrics:new(meter, udp_request_meter),
-  metrics:new(meter, tcp_request_meter),
+  metrics2:new(counter, udp_request_counter),
+  metrics2:new(counter, tcp_request_counter),
+  metrics2:new(meter, udp_request_meter),
+  metrics2:new(meter, tcp_request_meter),
 
-  metrics:new(meter, udp_error_meter),
-  metrics:new(meter, tcp_error_meter),
+  metrics2:new(meter, udp_error_meter),
+  metrics2:new(meter, tcp_error_meter),
 
   % The metrics module doesn't suport history, so use native folsom
   folsom_metrics:new_history(udp_error_history),
   folsom_metrics:new_history(tcp_error_history),
 
-  metrics:new(meter, refused_response_meter),
-  metrics:new(counter, refused_response_counter),
+  metrics2:new(meter, refused_response_meter),
+  metrics2:new(counter, refused_response_counter),
 
-  metrics:new(meter, empty_response_meter),
-  metrics:new(counter, empty_response_counter),
+  metrics2:new(meter, empty_response_meter),
+  metrics2:new(counter, empty_response_counter),
 
-  metrics:new(histogram, udp_handoff_histogram),
-  metrics:new(histogram, tcp_handoff_histogram),
+  metrics2:new(histogram, udp_handoff_histogram),
+  metrics2:new(histogram, tcp_handoff_histogram),
 
-  metrics:new(counter, request_throttled_counter),
-  metrics:new(meter, request_throttled_meter),
-  metrics:new(histogram, request_handled_histogram),
+  metrics2:new(counter, request_throttled_counter),
+  metrics2:new(meter, request_throttled_meter),
+  metrics2:new(histogram, request_handled_histogram),
 
-  metrics:new(counter, packet_dropped_empty_queue_counter),
-  metrics:new(meter, packet_dropped_empty_queue_meter),
+  metrics2:new(counter, packet_dropped_empty_queue_counter),
+  metrics2:new(meter, packet_dropped_empty_queue_meter),
 
-  metrics:new(meter, cache_hit_meter),
-  metrics:new(meter, cache_expired_meter),
-  metrics:new(meter, cache_miss_meter),
+  metrics2:new(meter, cache_hit_meter),
+  metrics2:new(meter, cache_expired_meter),
+  metrics2:new(meter, cache_miss_meter),
 
-  metrics:new(counter, dnssec_request_counter),
-  metrics:new(meter, dnssec_request_meter).
+  metrics2:new(counter, dnssec_request_counter),
+  metrics2:new(meter, dnssec_request_meter).
