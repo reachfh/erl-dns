@@ -60,14 +60,14 @@ get(Key, _Host) ->
     [{Key, {Response, ExpiresAt}}] ->
       case timestamp() > ExpiresAt of
         true ->
-          metrics2:update(cache_expired_meter, {c, 1}),
+          metrics2:update("cache_expired_meter", {c, 1}),
           {error, cache_expired};
         false ->
-          metrics2:update(cache_hit_meter, {c, 1}),
+          metrics2:update("cache_hit_meter", {c, 1}),
           {ok, Response}
       end;
     _ ->
-      metrics2:update(cache_miss_meter, {c, 1}),
+      metrics2:update("cache_miss_meter", {c, 1}),
       {error, cache_miss}
   end.
 
