@@ -34,7 +34,7 @@
 -define(SERVER, ?MODULE).
 -define(DEFAULT_UDP_RECBUF, 1024 * 1024). % 1 MB
 
--record(state, {address, port, socket, workers}).
+-record(state, {address, port, socket, workers, metrics_engine}).
 
 % Public API
 
@@ -64,13 +64,16 @@ is_running() ->
 init([InetFamily]) ->
   Port = erldns_config:get_port(),
   {ok, Socket} = start(Port, InetFamily),
-  {ok, #state{port = Port, socket = Socket, workers = make_workers(queue:new())}};
+  Engine = metrics:init(erldns_metrics:mod_metrics()),
+  {ok, #state{port = Port, socket = Socket, workers = make_workers(queue:new()), metrics_engine = Engine}};
 init([InetFamily, Address, Port]) ->
   {ok, Socket} = start(Address, Port, InetFamily),
-  {ok, #state{address = Address, port = Port, socket = Socket, workers = make_workers(queue:new())}};
+  Engine = metrics:init(erldns_metrics:mod_metrics()),
+  {ok, #state{address = Address, port = Port, socket = Socket, workers = make_workers(queue:new()), metrics_engine = Engine}};
 init([InetFamily, Address, Port, SocketOpts]) ->
   {ok, Socket} = start(Address, Port, InetFamily, SocketOpts),
-  {ok, #state{address = Address, port = Port, socket = Socket, workers = make_workers(queue:new())}}.
+  Engine = metrics:init(erldns_metrics:mod_metrics()),
+  {ok, #state{address = Address, port = Port, socket = Socket, workers = make_workers(queue:new()), metrics_engine = Engine}}.
 
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
@@ -80,7 +83,8 @@ handle_info(timeout, State) ->
   %lager:info("UDP instance timed out"),
   {noreply, State};
 handle_info({udp, Socket, Host, Port, Bin}, State) ->
-  Response = folsom_metrics:histogram_timed_update(udp_handoff_histogram, ?MODULE, handle_request, [Socket, Host, Port, Bin, State]),
+  {Time, Response} = timer:tc(?MODULE, handle_request, [Socket, Host, Port, Bin, State]),
+  ok = metrics:update_histogram(State#state.metrics_engine, udp_handoff_histogram, Time),
   inet:setopts(State#state.socket, [{active, 100}]),
   Response;
 handle_info(_Message, State) ->
@@ -99,7 +103,7 @@ start(Address, Port, InetFamily) ->
   lager:info("Starting UDP server for ~p on address ~p and port ~p", [InetFamily, Address, Port]),
   case gen_udp:open(Port, [binary, {active, 100}, {reuseaddr, true},
                            {read_packets, 1000}, {ip, Address}, {recbuf, ?DEFAULT_UDP_RECBUF}, InetFamily]) of
-    {ok, Socket} -> 
+    {ok, Socket} ->
       lager:info("UDP server (~p, address: ~p) opened socket: ~p", [InetFamily, Address, Socket]),
       {ok, Socket};
     {error, eacces} ->
@@ -111,7 +115,7 @@ start(Address, Port, InetFamily, SocketOpts) ->
   lager:info("Starting UDP server for ~p on address ~p and port ~p (sockopts: ~p)", [InetFamily, Address, Port, SocketOpts]),
   case gen_udp:open(Port, [{reuseaddr, true}, binary, {active, 100},
                            {read_packets, 1000}, {ip, Address}, {recbuf, ?DEFAULT_UDP_RECBUF}, InetFamily|SocketOpts]) of
-    {ok, Socket} -> 
+    {ok, Socket} ->
       lager:info("UDP server (~p, address: ~p) opened socket: ~p", [InetFamily, Address, Socket]),
       {ok, Socket};
     {error, eacces} ->
@@ -128,8 +132,9 @@ handle_request(Socket, Host, Port, Bin, State) ->
       gen_server:cast(Worker, {udp_query, Socket, Host, Port, Bin}),
       {noreply, State#state{workers = queue:in(Worker, Queue)}};
     {empty, _Queue} ->
-      folsom_metrics:notify({packet_dropped_empty_queue_counter, {inc, 1}}),
-      folsom_metrics:notify({packet_dropped_empty_queue_meter, 1}),
+      Engine = State#state.metrics_engine,
+      metrics:increment_counter(Engine, packet_dropped_empty_queue_counter),
+      metrics:update_meter(Engine, packet_dropped_empty_queue_meter, 1),
       lager:info("Queue is empty, dropping packet"),
       {noreply, State}
   end.

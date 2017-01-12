@@ -35,7 +35,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {port}).
+-record(state, {port, metrics_engine}).
 
 %% Public API
 -spec start_link(atom(), inet | inet6) -> {ok, pid()} | ignore | {error, term()}.
@@ -49,13 +49,15 @@ start_link(_Name, Family, Address, Port) ->
 
 %% gen_server hooks
 init([]) ->
-  {ok, #state{}}.
+  Engine = metrics:init(erldns_metrics:mod_metrics()),
+  {ok, #state{metrics_engine = Engine}}.
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 handle_cast(_Message, State) ->
   {noreply, State}.
 handle_info({tcp, Socket, Bin}, State) ->
-  folsom_metrics:histogram_timed_update(tcp_handoff_histogram, ?MODULE, handle_request, [Socket, Bin]),
+  {Time, _Value} = timer:tc(?MODULE, handle_request, [Socket, Bin]),
+  ok = metrics:update_histogram(State#state.metrics_engine, tcp_handoff_histogram, Time),
   {noreply, State};
 handle_info(_Message, State) ->
   {noreply, State}.

@@ -26,10 +26,11 @@
          terminate/2
         ]).
 
--record(state, {servers_running = false}).
+-record(state, {servers_running = false, metrics_engine = undefined}).
 
 init(_Args) ->
-  {ok, #state{}}.
+  Engine = metrics:init(erldns_metrics:mod_metrics()),
+  {ok, #state{metrics_engine = Engine}}.
 
 handle_event(start_servers, State) ->
   case State#state.servers_running of
@@ -45,40 +46,47 @@ handle_event(start_servers, State) ->
   end;
 
 handle_event({end_udp, [{host, _Host}]}, State) ->
-  folsom_metrics:notify({udp_request_meter, 1}),
-  folsom_metrics:notify({udp_request_counter, {inc, 1}}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, udp_request_meter, 1),
+  metrics:increment_counter(Engine, udp_request_counter),
   {ok, State};
 
 handle_event({end_tcp, [{host, _Host}]}, State) ->
-  folsom_metrics:notify({tcp_request_meter, 1}),
-  folsom_metrics:notify({tcp_request_counter, {inc, 1}}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, tcp_request_meter, 1),
+  metrics:increment_counter(Engine, tcp_request_counter),
   {ok, State};
 
 handle_event({udp_error, Reason}, State) ->
-  folsom_metrics:notify({udp_error_meter, 1}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, udp_error_meter, 1),
   folsom_metrics:notify({udp_error_history, Reason}),
   {ok, State};
 
 handle_event({tcp_error, Reason}, State) ->
-  folsom_metrics:notify({tcp_error_meter, 1}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, tcp_error_meter, 1),
   folsom_metrics:notify({tcp_error_history, Reason}),
   {ok, State};
 
 handle_event({refused_response, Questions}, State) ->
-  folsom_metrics:notify({refused_response_meter, 1}),
-  folsom_metrics:notify({refused_response_counter, {inc, 1}}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, refused_response_meter, 1),
+  metrics:increment_counter(Engine, refused_response_counter),
   lager:debug("Refused response: ~p", [Questions]),
   {ok, State};
 
 handle_event({empty_response, Message}, State) ->
-  folsom_metrics:notify({empty_response_meter, 1}),
-  folsom_metrics:notify({empty_response_counter, {inc, 1}}),
+  Engine = State#state.metrics_engine,
+  metrics:update_meter(Engine, empty_response_meter, 1),
+  metrics:increment_counter(Engine, empty_response_counter),
   lager:info("Empty response: ~p", [Message]),
   {ok, State};
 
 handle_event({dnssec_request, _Host, _Qname}, State) ->
-  folsom_metrics:notify(dnssec_request_counter, {inc, 1}),
-  folsom_metrics:notify(dnssec_request_meter, 1),
+  Engine = State#state.metrics_engine,
+  metrics:increment_counter(Engine, dnssec_request_counter),
+  metrics:update_meter(Engine, dnssec_request_meter, 1),
   {ok, State};
 
 handle_event(_Event, State) ->
