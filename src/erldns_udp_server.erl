@@ -81,7 +81,7 @@ handle_info(timeout, State) ->
   {noreply, State};
 handle_info({udp, Socket, Host, Port, Bin}, State) ->
   {Time, Response} = timer:tc(?MODULE, handle_request, [Socket, Host, Port, Bin, State]),
-  ok = metrics2:update("udp_handoff_histogram", {c, Time}),
+  ok = metrics2:update([udp_handoff_histogram], {c, Time}),
   inet:setopts(State#state.socket, [{active, 100}]),
   Response;
 handle_info(_Message, State) ->
@@ -129,8 +129,8 @@ handle_request(Socket, Host, Port, Bin, State) ->
       gen_server:cast(Worker, {udp_query, Socket, Host, Port, Bin}),
       {noreply, State#state{workers = queue:in(Worker, Queue)}};
     {empty, _Queue} ->
-      metrics2:update("packet_dropped_empty_queue_counter"),
-      metrics2:update("packet_dropped_empty_queue_meter", {c, 1}),
+      metrics2:update([packet_dropped_empty_queue_counter]),
+      metrics2:update([packet_dropped_empty_queue_meter], {c, 1}),
       lager:info("Queue is empty, dropping packet"),
       {noreply, State}
   end.

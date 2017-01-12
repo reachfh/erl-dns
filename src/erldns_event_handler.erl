@@ -45,40 +45,40 @@ handle_event(start_servers, State) ->
   end;
 
 handle_event({end_udp, [{host, _Host}]}, State) ->
-  metrics2:update("udp_request_meter", {c, 1}),
-  metrics2:update("udp_request_counter"),
+  metrics2:update([udp_request_meter], {c, 1}),
+  metrics2:update([udp_request_counter]),
   {ok, State};
 
 handle_event({end_tcp, [{host, _Host}]}, State) ->
-  metrics2:update("tcp_request_meter", {c, 1}),
-  metrics2:update("tcp_request_counter"),
+  metrics2:update([tcp_request_meter], {c, 1}),
+  metrics2:update([tcp_request_counter]),
   {ok, State};
 
 handle_event({udp_error, Reason}, State) ->
-  metrics2:update("udp_error_meter", {c, 1}),
+  metrics2:update([udp_error_meter], {c, 1}),
   folsom_metrics:notify({udp_error_history, Reason}),
   {ok, State};
 
 handle_event({tcp_error, Reason}, State) ->
-  metrics2:update("tcp_error_meter", {c, 1}),
+  metrics2:update([tcp_error_meter], {c, 1}),
   folsom_metrics:notify({tcp_error_history, Reason}),
   {ok, State};
 
 handle_event({refused_response, Questions}, State) ->
-  metrics2:update("refused_response_meter", {c, 1}),
-  metrics2:update("refused_response_counter"),
+  metrics2:update([refused_response_meter], {c, 1}),
+  metrics2:update([refused_response_counter]),
   lager:debug("Refused response: ~p", [Questions]),
   {ok, State};
 
 handle_event({empty_response, Message}, State) ->
-  metrics2:update("empty_response_meter", {c, 1}),
-  metrics2:update("empty_response_counter"),
+  metrics2:update([empty_response_meter], {c, 1}),
+  metrics2:update([empty_response_counter]),
   lager:info("Empty response: ~p", [Message]),
   {ok, State};
 
 handle_event({dnssec_request, _Host, _Qname}, State) ->
-  metrics2:update("dnssec_request_counter"),
-  metrics2:update("dnssec_request_meter", {c, 1}),
+  metrics2:update([dnssec_request_counter]),
+  metrics2:update([dnssec_request_meter], {c, 1}),
   {ok, State};
 
 handle_event(_Event, State) ->

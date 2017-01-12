@@ -97,8 +97,8 @@ handle(BadMessage, {_, Host}) ->
 %% Note: this should probably be changed to return the original packet without
 %% any answer data and with TC bit set to 1.
 handle(Message, Host, {throttled, Host, _ReqCount}) ->
-  metrics2:update("request_throttled_counter"),
-  metrics2:update("request_throttled_meter", {c, 1}),
+  metrics2:update([request_throttled_counter]),
+  metrics2:update([request_throttled_meter], {c, 1}),
   Message#dns_message{tc = true, aa = true, rc = ?DNS_RCODE_NOERROR};
 
 %% Message was not throttled, so handle it, then do EDNS handling, optionally
@@ -108,7 +108,7 @@ handle(Message, Host, _) ->
   %lager:debug("Questions: ~p", [Message#dns_message.questions]),
   erldns_events:notify({start_handle, [{host, Host}, {message, Message}]}),
   {Time, Response} = timer:tc(?MODULE, do_handle, [Message, Host]),
-  ok = metrics2:update("request_handled_histogram", {c, Time}),
+  ok = metrics2:update([request_handled_histogram], {c, Time}),
   erldns_events:notify({end_handle, [{host, Host}, {message, Message}, {response, Response}]}),
   Response.
 
