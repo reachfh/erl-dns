@@ -53,6 +53,8 @@ stop(_State) ->
   ok.
 
 setup_metrics() ->
+  application:ensure_started(metrics2),
+
   metrics2:new(counter, udp_request_counter),
   metrics2:new(counter, tcp_request_counter),
   metrics2:new(meter, udp_request_meter),
